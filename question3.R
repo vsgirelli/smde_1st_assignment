@@ -101,12 +101,10 @@ hdd_p_value <- hdd_shapiro$p.value
 ssd_shapiro <- shapiro.test(laptop$SSD)
 ssd_p_value <- ssd_shapiro$p.value
 
-
+print(names(correlation_with_price))
 # Model (and then normality test over residuals)
-models <- lapply(names(correlation_with_price), function(var) lm(Price ~ ., data = laptop[, c(var, "Price")]))
-models <- lapply(names(correlation_with_price), function(var) lm(formula = Price ~ ., data = laptop))
-# From chatgpt (pasting to continue later) TODO  remove :)
-# Evaluate model performance
+models <- lapply(names(correlation_with_price), function(var) lm(Price ~ ., data = num_laptop[, c(var, "Price")]))
+models2 <- lapply(names(correlation_with_price), function(var) lm(formula = Price ~ ., data = num_laptop))
 summary_stats <- lapply(models, summary)
 rsquared_values <- sapply(summary_stats, function(model_summary) model_summary$r.squared)
 
