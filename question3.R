@@ -1,6 +1,6 @@
 library(readr)
 
-setwd("/home/vsoldera/dev/upc/2nd/smde/smde_1st_assignment/")
+setwd("/home/vsgirelli/dev/upc/smde/smde_1st_assignment/")
 laptop <- read.csv("data/laptop_data_cleaned.csv")
 
 laptop$Company <- as.factor(laptop$Company)
@@ -33,21 +33,39 @@ boxplot(laptop$SSD,
 
 # Copy the original dataset to a new variable for filtering
 laptop_subset_filtered <- laptop
-
-# Initiate a counter for tracking
+columns_to_check <- c("Weight", "SSD", "HDD", "Ppi", "Ram") 
+# Initialize iteration counter
 iteration_counter <- 1
+
+# Start the repeat loop
 repeat {
-  # Calculate outliers in the filtered dataset
-  outliers <- boxplot.stats(laptop_subset_filtered$Weight)$out
-  # Print the iteration and number of outliers found (optional)
-  cat("Iteration", iteration_counter, ": Found", length(outliers), "outliers\n")
+  # Initialize an empty list to store filtered datasets for each column
+  filtered_datasets <- list()
   
-  # Break the loop if no outliers are found
-  if(length(outliers) == 0) {
-    break
+  # Iterate over each column
+  for (col_name in columns_to_check) {
+    # Calculate outliers in the filtered dataset for the current column
+    outliers <- boxplot.stats(laptop_subset_filtered[[col_name]])$out
+    
+    # Filter out the outliers from the filtered dataset for the current column
+    filtered_datasets[[col_name]] <- laptop_subset_filtered[!laptop_subset_filtered[[col_name]] %in% outliers, ]
+
+    # Print the iteration and number of outliers found for the current column
+    cat("Iteration", iteration_counter, "for column", col_name, ": Found", length(outliers), "outliers\n")
   }
-  # Filter out the outliers from the filtered dataset
-  laptop_subset_filtered <- laptop_subset_filtered[!laptop_subset_filtered$Weight %in% outliers, ]
+  
+  # Check if any of the filtered datasets are empty
+  if (any(sapply(filtered_datasets, function(x) nrow(x)) == 0)) {
+    break  # If any dataset is empty, break the loop
+  }
+  
+  # Update the laptop_subset_filtered dataset with filtered datasets for each column
+  common_rows <- Reduce(intersect, lapply(filtered_datasets, rownames))
+  final_dataset <- filtered_datasets[[1]][common_rows, ]
+  for (i in 2:length(filtered_datasets)) {
+    final_dataset <- merge(final_dataset, filtered_datasets[[i]][common_rows, ], by = colnames(final_dataset), all = FALSE)
+  }
+  
   # Increment the counter
   iteration_counter <- iteration_counter + 1
 }
@@ -177,15 +195,9 @@ dwtest(model_ram, alternative = "two.sided") # should be higher than the confide
 # autocorrelation in the residuals as it is smaller than the significance level.
 # Tried modifications, didn't work
 
+Vale Pol entonces te explico
+Estoy haciendo el lab 3, letra a. Ahí he removido muchos outliers y tal, pero
 
-<<<<<<< HEAD
-print(names(correlation_with_price))
-# Model (and then normality test over residuals)
-models <- lapply(names(correlation_with_price), function(var) lm(Price ~ ., data = num_laptop[, c(var, "Price")]))
-models2 <- lapply(names(correlation_with_price), function(var) lm(formula = Price ~ ., data = num_laptop))
-summary_stats <- lapply(models, summary)
-rsquared_values <- sapply(summary_stats, function(model_summary) model_summary$r.squared)
-=======
 # We need to make an analysis of the residuals: examine the differences
 # between the actual data points and those predicted by the linear equation
 summ_ram <- summary(model_ram)
@@ -245,13 +257,16 @@ print(summ_ssd)
 # is zero and conclude that there is evidence of a linear relationship 
 # between the two variables.
 
->>>>>>> da9d205580f9bcd5b513d9dded4ab897ccc33bee
 
 
 
 
-
-
+print(names(correlation_with_price))
+# Model (and then normality test over residuals)
+models <- lapply(names(correlation_with_price), function(var) lm(Price ~ ., data = num_laptop[, c(var, "Price")]))
+models2 <- lapply(names(correlation_with_price), function(var) lm(formula = Price ~ ., data = num_laptop))
+summary_stats <- lapply(models, summary)
+rsquared_values <- sapply(summary_stats, function(model_summary) model_summary$r.squared)
 
 # Generating a model for all the other numerical variables and analysing
 # their Coefficient of Determination to check that the most significant ones
