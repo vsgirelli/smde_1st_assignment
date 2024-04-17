@@ -1,6 +1,6 @@
 library(readr)
 
-setwd("/home/vsoldera/dev/upc/2nd/smde/smde_1st_assignment/")
+#setwd("/home/vsoldera/dev/upc/2nd/smde/smde_1st_assignment/")
 laptop <- read.csv("data/laptop_data_cleaned.csv")
 #write.csv(num_laptop, file = "no_outliers_numerical_laptop.csv", row.names = TRUE)
 num_laptop <- read.csv("no_outliers_numerical_laptop.csv")
@@ -47,17 +47,17 @@ repeat {
   
   columns_to_check <- "Weight"
   for (column in columns_to_check) {
-  # Calculate outliers in the filtered dataset
-  outliers <- boxplot.stats(num_laptop[[column]])$out
-  # Filter out the outliers from the filtered dataset
-  num_laptop <- num_laptop[!num_laptop[[column]] %in% outliers, ]
-  
-  # Print the iteration and number of outliers found (optional)
-  cat("Iteration", iteration_counter, ": Found", length(outliers), "outliers\n")
-  
-  if (length(outliers) > 0) {
-    outliers_removed <- TRUE
-  }
+    # Calculate outliers in the filtered dataset
+    outliers <- boxplot.stats(num_laptop[[column]])$out
+    # Filter out the outliers from the filtered dataset
+    num_laptop <- num_laptop[!num_laptop[[column]] %in% outliers, ]
+    
+    # Print the iteration and number of outliers found (optional)
+    cat("Iteration", iteration_counter, ": Found", length(outliers), "outliers\n")
+    
+    if (length(outliers) > 0) {
+      outliers_removed <- TRUE
+    }
   }
   # Increment the counter
   iteration_counter <- iteration_counter + 1
@@ -117,14 +117,14 @@ library(ggplot2)
 
 # Outliers: the right-most point is an outlier
 ram_price <- ggplot(num_laptop, aes_string(x = "Ram", y = "Price")) +
-    theme(text = element_text(size = 16)) +
-    scale_y_continuous(labels = scales::number_format(accuracy = 0.01),
-                       breaks = seq(min(num_laptop$Price), max(num_laptop$Price), length.out = 5)) +
-    scale_x_continuous(labels = scales::number_format(accuracy = 0.01),
-                       breaks = seq(min(num_laptop$Ram), max(num_laptop$Ram), length.out = 7)) +
-    geom_point() +
-    labs(x = "Ram", y = "Price") +
-    ggtitle(paste( "Ram vs. Price"))
+  theme(text = element_text(size = 16)) +
+  scale_y_continuous(labels = scales::number_format(accuracy = 0.01),
+                     breaks = seq(min(num_laptop$Price), max(num_laptop$Price), length.out = 5)) +
+  scale_x_continuous(labels = scales::number_format(accuracy = 0.01),
+                     breaks = seq(min(num_laptop$Ram), max(num_laptop$Ram), length.out = 7)) +
+  geom_point() +
+  labs(x = "Ram", y = "Price") +
+  ggtitle(paste( "Ram vs. Price"))
 print(ram_price)
 
 weight_price <- ggplot(num_laptop, aes_string(x = "Weight", y = "Price")) +
@@ -378,6 +378,152 @@ print(summ_weight)
 # Multiple R-squared:  0.019 indicates that around 2% of the variation of
 # the price is explained by the HDD
 
+# Part B
+
+# Weight and Ppi
+model_weight_ppi <- lm(Price ~ Weight + Ppi, data = num_laptop)
+summ_weight_ppi <- summary(model_weight_ppi)
+
+# Weight and HDD
+model_weight_hdd <- lm(Price ~ Weight + HDD, data = num_laptop)
+summ_weight_hdd <- summary(model_weight_hdd)
+
+# Weight and SSD
+model_weight_ssd <- lm(Price ~ Weight + SSD, data = num_laptop)
+summ_weight_ssd <- summary(model_weight_ssd)
+
+# Ppi and HDD
+model_ppi_hdd <- lm(Price ~ Ppi + HDD, data = num_laptop)
+summ_ppi_hdd <- summary(model_ppi_hdd)
+
+# Ppi and SSD
+model_ppi_ssd <- lm(Price ~ Ppi + SSD, data = num_laptop)
+summ_ppi_ssd <- summary(model_ppi_ssd)
+
+# HDD and SSD
+model_hdd_ssd <- lm(Price ~ HDD + SSD, data = num_laptop)
+summ_hdd_ssd <- summary(model_hdd_ssd)
+
+library(car)
+
+# # These models give the aliased coefficients error
+# # Because ppi is useless
+# # Weight and Ppi
+# vif_weight_ppi <- vif(model_weight_ppi)
+# # Ppi and HDD
+# vif_ppi_hdd <- vif(model_ppi_hdd)
+# # Ppi and SSD
+# vif_ppi_ssd <- vif(model_ppi_ssd)
+
+# Weight and HDD
+vif_weight_hdd <- vif(model_weight_hdd)
+
+# Normality of residuals
+qqnorm(residuals(model_weight_hdd))
+hist(residuals(model_weight_hdd))
+shapiro.test(residuals(model_weight_hdd))
+
+# Residual plot
+plot(residuals(model_weight_hdd))
+abline(h = 0, col = "red")
+
+# Heteroscedasticity tests
+bptest(model_weight_hdd)
+dwtest(model_weight_hdd, alternative = "two.sided")
+
+# Model summary
+summary(model_weight_hdd)
 
 
+# Weight and SSD
+vif_weight_ssd <- vif(model_weight_ssd)
 
+# Normality of residuals
+qqnorm(residuals(model_weight_ssd))
+hist(residuals(model_weight_ssd))
+shapiro.test(residuals(model_weight_ssd))
+
+# Residual plot
+plot(residuals(model_weight_ssd))
+abline(h = 0, col = "red")
+
+# Heteroscedasticity tests
+bptest(model_weight_ssd)
+dwtest(model_weight_ssd, alternative = "two.sided")
+
+# Model summary
+summary(model_weight_ssd)
+
+
+# HDD and SSD
+# Normality of residuals
+qqnorm(residuals(model_hdd_ssd))
+hist(residuals(model_hdd_ssd))
+shapiro.test(residuals(model_hdd_ssd))
+
+# Residual plot
+plot(residuals(model_hdd_ssd))
+abline(h = 0, col = "red")
+
+# Heteroscedasticity tests
+bptest(model_hdd_ssd)
+dwtest(model_hdd_ssd, alternative = "two.sided")
+
+# Model summary
+summary(model_hdd_ssd)
+
+
+# Define variables to loop through
+# variables <- c("Ram", "Weight", "Ppi", "HDD", "SSD")
+# 
+# two_model <- list()
+# two_summary <- list()
+# two_vif <- list()
+# two_shapiro <- list()
+# two_bp <- list()
+# two_dw <- list()
+# two_models <- list()
+# two_rsquared <- list()
+#
+# for (i in 1:(length(variables)-1)) {
+#   for (j in (i+1):length(variables)) {
+#     # Build model
+#     two_model <- lm(Price ~ ., data = num_laptop[, c("Price", variables[i], variables[j])])
+#     two_models[[paste(variables[i], variables[j], sep = "_")]] <- two_model
+#     
+#     two_summary[[paste("summ", variables[i], variables[j], sep = "_")]] <- summary(two_model)
+#     
+#     library(car)
+#     #correlation
+#     two_vif[[paste("vif", variables[i], variables[j], sep = "_")]] <- vif(two_model)
+#     qqnorm(residuals(two_model))
+#     hist(residuals(two_model))
+#     two_shapiro[[paste("shapiro", variables[i], variables[j], sep = "_")]] <- shapiro.test(residuals(two_model))
+#     
+#     plot(residuals(two_model))
+#     abline(h = 0, col = "red")
+#     
+#     library(lmtest)
+#     two_bp[[paste("bp", variables[i], variables[j], sep = "_")]] <- bptest(two_model)
+#     
+#     two_dw[[paste("dw", variables[i], variables[j], sep = "_")]] <- dwtest(two_model, alternative = "two.sided")
+#     
+#     two_rsquared[[paste(variables[i], variables[j], sep = "_")]] <- summary(two_model)$r.squared
+#   }
+# }
+# 
+# two_best_model_index <- names(which.max(unlist(two_rsquared)))
+# two_best_model <- two_models[[two_best_model_index]]
+# two_best_model_summary <- summary(two_best_model)
+# two_best_model_rsquared <- two_rsquared[[two_best_model_index]]
+# 
+# print(two_best_model_summary)
+# print(paste("Best model R-squared for two:", two_best_model_rsquared))
+# 
+# # RAM_SSD is chosen as the best model
+# #model_ram_ssd <- two_models[["Ram_SSD"]]
+# 
+# # Part C
+# factors <- c("Company", "TypeName", "Cpu_brand", "Gpu_brand", "Os")
+# 
+# factored_models <- list()
