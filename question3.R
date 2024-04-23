@@ -380,18 +380,6 @@ print(summ_weight)
 
 
 
-# Part B
-# Define variables to loop through
-# Load data
-laptop <- read.csv("data/laptop_data_cleaned.csv")
-
-# Convert columns to numeric
-laptop$Weight <- as.numeric(laptop$Weight)
-laptop$Price <- as.numeric(laptop$Price)
-laptop$Ppi <- as.numeric(laptop$Ppi)
-laptop$HDD <- as.numeric(laptop$HDD)
-laptop$SSD <- as.numeric(laptop$SSD)
-
 # ------ Outlier removal ----
 # Check and remove rows with NA values in specified columns
 laptop <- na.omit(laptop[, c("Weight", "Price", "Ppi", "HDD", "SSD")])
@@ -447,19 +435,15 @@ for (i in 1:(length(variables)-1)) {
     two_dw[[paste("dw", variables[i], variables[j], sep = "_")]] <- dwtest(two_model, alternative = "two.sided")
     
     two_rsquared[[paste(variables[i], variables[j], sep = "_")]] <- summary(two_model)$r.squared
+    
+    print(vif(two_model))
+    print(bptest(two_model))
+    print(dwtest(two_model))
+    print(shapiro.test(residuals(two_model)))
   }
 }
 
-two_best_model_index <- names(which.max(unlist(two_rsquared)))
-two_best_model <- two_models[[two_best_model_index]]
-two_best_model_summary <- summary(two_best_model)
-two_best_model_rsquared <- two_rsquared[[two_best_model_index]]
-
-print(two_best_model_summary)
-print(paste("Best model R-squared for two:", two_best_model_rsquared))
-
-# RAM_SSD is chosen as the best model
-#model_ram_ssd <- two_models[["Ram_SSD"]]
+# Best model is Ppi_HDD for multivariate models
 
 # Part C
 factors <- c("Company", "TypeName", "Cpu_brand", "Gpu_brand", "Os")
