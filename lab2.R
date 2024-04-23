@@ -148,10 +148,11 @@ leveneTest(Price ~ Company, data = laptop_subset)
 leveneTest(Weight ~ Company, data = laptop_subset)
 
 #3. Independence of Observations (Durbin-Watson Test)
-model_price <- lm(Price ~ Company, data = laptop_subset)
+model_price <- aov(Price ~ Company, data = laptop_subset)
 dwtest(model_price)
 
-model_weight <- lm(Weight ~ Company, data = laptop_subset)
+
+model_weight <- aov(Weight ~ Company, data = laptop_subset)
 dwtest(model_weight)
 
 
@@ -204,5 +205,7 @@ dunnett_test <- glht(model_price, linfct = mcp(Company = "Dunnett"))
 summary(dunnett_test)
 
 # 3. Scheffé's Test - Useful for complex comparisons, generally more conservative
-scheffe_test <- glht(model_price, linfct = mcp(Company = "Scheffe"))
-summary(scheffe_test)
+# If you want to consider Touchscreen as another factor, you can also do:
+pairwise_results_touchscreen <- with(laptop_subset, pairwise.t.test(Price, TouchScreen, p.adj = "bonf"))
+# Print results
+print(pairwise_results_touchscreen)
