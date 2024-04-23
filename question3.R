@@ -9,7 +9,7 @@ laptop$Company <- as.factor(laptop$Company)
 laptop$TypeName <- as.factor(laptop$TypeName)
 laptop$Cpu_brand <- as.factor(laptop$Cpu_brand)
 laptop$Gpu_brand <- as.factor(laptop$Gpu_brand)
-laptop$Os <- as.factor(laptop$Os)a
+laptop$Os <- as.factor(laptop$Os)
 laptop$Ram <- as.factor(laptop$Ram)
 
 laptop$TouchScreen <- as.logical(laptop$TouchScreen)
@@ -23,6 +23,7 @@ laptop$HDD <- as.numeric(laptop$HDD)
 laptop$SSD <- as.numeric(laptop$SSD)
 
 ###### Removing outliers
+
 boxplot(laptop$SSD,
         main = "Box Plot of Laptop Weights",
         ylab = "Ram",
@@ -42,6 +43,7 @@ num_laptop <- laptop[, sapply(laptop, is.numeric)]
 iteration_counter <- 1
 repeat {
   outliers_removed <- FALSE
+  
   
   columns_to_check <- "Weight"
   for (column in columns_to_check) {
@@ -377,5 +379,91 @@ print(summ_weight)
 # the price is explained by the HDD
 
 
+
+# Part B
+# Define variables to loop through
+# Load data
+laptop <- read.csv("data/laptop_data_cleaned.csv")
+
+# Convert columns to numeric
+laptop$Weight <- as.numeric(laptop$Weight)
+laptop$Price <- as.numeric(laptop$Price)
+laptop$Ppi <- as.numeric(laptop$Ppi)
+laptop$HDD <- as.numeric(laptop$HDD)
+laptop$SSD <- as.numeric(laptop$SSD)
+
+# ------ Outlier removal ----
+# Check and remove rows with NA values in specified columns
+laptop <- na.omit(laptop[, c("Weight", "Price", "Ppi", "HDD", "SSD")])
+
+# Calculate Mahalanobis distance
+# install.packages("mvoutlier")
+library(mvoutlier)
+cov_matrix <- cov(laptop[, c("Weight", "Price", "Ppi", "HDD", "SSD")])
+center_vector <- colMeans(laptop[, c("Weight", "Price", "Ppi", "HDD", "SSD")], na.rm = TRUE)
+laptop$Mahalanobis <- mahalanobis(laptop[, c("Weight", "Price", "Ppi", "HDD", "SSD")], center = center_vector, cov = cov_matrix)
+
+# Define threshold based on chi-squared distribution
+threshold <- qchisq(0.999, df = 5)  # df is the number of variables
+
+# Identify outliers
+outliers <- which(laptop$Mahalanobis > threshold)
+num_laptop <- laptop[-outliers, ]
+
+variables <- c("Weight", "Ppi", "HDD", "SSD")
+
+# Outlier removal
+
+two_model <- list()
+two_summary <- list()
+two_vif <- list()
+two_shapiro <- list()
+two_bp <- list()
+two_dw <- list()
+two_models <- list()
+two_rsquared <- list()
+
+for (i in 1:(length(variables)-1)) {
+  for (j in (i+1):length(variables)) {
+    # Build model
+    two_model <- lm(Price ~ ., data = num_laptop[, c("Price", variables[i], variables[j])])
+    two_models[[paste(variables[i], variables[j], sep = "_")]] <- two_model
+    
+    two_summary[[paste("summ", variables[i], variables[j], sep = "_")]] <- summary(two_model)
+    
+    library(car)
+    #correlation
+    two_vif[[paste("vif", variables[i], variables[j], sep = "_")]] <- vif(two_model)
+    qqnorm(residuals(two_model))
+    hist(residuals(two_model))
+    two_shapiro[[paste("shapiro", variables[i], variables[j], sep = "_")]] <- shapiro.test(residuals(two_model))
+    
+    plot(residuals(two_model))
+    abline(h = 0, col = "red")
+    
+    library(lmtest)
+    two_bp[[paste("bp", variables[i], variables[j], sep = "_")]] <- bptest(two_model)
+    
+    two_dw[[paste("dw", variables[i], variables[j], sep = "_")]] <- dwtest(two_model, alternative = "two.sided")
+    
+    two_rsquared[[paste(variables[i], variables[j], sep = "_")]] <- summary(two_model)$r.squared
+  }
+}
+
+two_best_model_index <- names(which.max(unlist(two_rsquared)))
+two_best_model <- two_models[[two_best_model_index]]
+two_best_model_summary <- summary(two_best_model)
+two_best_model_rsquared <- two_rsquared[[two_best_model_index]]
+
+print(two_best_model_summary)
+print(paste("Best model R-squared for two:", two_best_model_rsquared))
+
+# RAM_SSD is chosen as the best model
+#model_ram_ssd <- two_models[["Ram_SSD"]]
+
+# Part C
+factors <- c("Company", "TypeName", "Cpu_brand", "Gpu_brand", "Os")
+
+factored_models <- list()
 
 
