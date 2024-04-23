@@ -9,7 +9,7 @@ laptop$Company <- as.factor(laptop$Company)
 laptop$TypeName <- as.factor(laptop$TypeName)
 laptop$Cpu_brand <- as.factor(laptop$Cpu_brand)
 laptop$Gpu_brand <- as.factor(laptop$Gpu_brand)
-laptop$Os <- as.factor(laptop$Os)
+laptop$Os <- as.factor(laptop$Os)a
 laptop$Ram <- as.factor(laptop$Ram)
 
 laptop$TouchScreen <- as.logical(laptop$TouchScreen)
@@ -23,7 +23,6 @@ laptop$HDD <- as.numeric(laptop$HDD)
 laptop$SSD <- as.numeric(laptop$SSD)
 
 ###### Removing outliers
-
 boxplot(laptop$SSD,
         main = "Box Plot of Laptop Weights",
         ylab = "Ram",
@@ -43,7 +42,6 @@ num_laptop <- laptop[, sapply(laptop, is.numeric)]
 iteration_counter <- 1
 repeat {
   outliers_removed <- FALSE
-  
   
   columns_to_check <- "Weight"
   for (column in columns_to_check) {
