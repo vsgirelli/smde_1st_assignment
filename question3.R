@@ -92,7 +92,9 @@ boxplot(num_laptop$Ppi,
 library(corrplot)
 summary(num_laptop)
 #num_laptop <- num_laptop[, sapply(num_laptop, is.numeric)]
-correlation_matrix <- cor(num_laptop)
+num_laptop <- subset(num_laptop, select = -X)
+num_laptop_not_ppi <- subset(num_laptop, select = -Ppi)
+correlation_matrix <- cor(num_laptop_not_ppi)
 corrplot(correlation_matrix, method = "color", tl.col = "black", tl.cex = 1, cl.cex = 0.8)
 # In this corrplot, basically it means that the darker blue colors (essentially with RAM and SSD)
 # indicate that there's a strong positive relationship
@@ -188,10 +190,10 @@ abline(h = 0, col = "red")
 # We had an outlier:
 # the plot shows that there's an outlier in RAM
 # an outlier in a residual plot used to test for homoscedasticity
-# may indicate potential issues with the assumption of constant variance of the residuals.
+# may indicate potential issues with the assumption of constant variance of the residuals
+# We have homocedasticity .
 library(lmtest)
-bptest(model_ram) # should be higher than the confidence level to indicate homocedasticity 
-# We have homocedasticity as the variance of the error is constant
+bptest(model_ram) # should be higher than the confidence level to indicate homogeneity 
 # and the p-value of the Breusch-Pagan test is 0.804
 
 # 3. The error values are independent (59)
@@ -235,10 +237,10 @@ shapiro.test(residuals(model_ssd))
 # 2. The standard deviation is a constant regardless of the value of x (slide 57)
 plot(residuals(model_ssd))
 abline(h = 0, col = "red")
+# We have homocedasticity 
 library(lmtest)
-bptest(model_ssd) # should be higher than the confidence level to indicate homocedasticity 
-# We have homocedasticity as the variance of the error is constant
-# and the p-value of the Breusch-Pagan test is 0.8345
+bptest(model_ssd) # should be higher than the confidence level to indicate homogeneity 
+# p-value Breusch-Pagan test is 0.8345
 
 # 3. The error values are independent (59)
 dwtest(model_ssd, alternative = "two.sided") # should be higher than the confidence level 
@@ -276,9 +278,9 @@ shapiro.test(residuals(model_ppi))
 # 2. The standard deviation is a constant regardless of the value of x (slide 57)
 plot(residuals(model_ppi))
 abline(h = 0, col = "red")
+# We have homocedasticity 
 library(lmtest)
-bptest(model_ppi) # should be higher than the confidence level to indicate homocedasticity 
-# We have homocedasticity as the variance of the error is constant
+bptest(model_ppi) # should be higher than the confidence level to indicate homogeneity 
 # and the p-value of the Breusch-Pagan test is p-value < 2.2e-16 (bad)
 
 # 3. The error values are independent (59)
@@ -312,9 +314,9 @@ shapiro.test(residuals(model_hdd))
 # 2. The standard deviation is a constant regardless of the value of x (slide 57)
 plot(residuals(model_hdd))
 abline(h = 0, col = "red")
+# We have homocedasticity 
 library(lmtest)
-bptest(model_hdd) # should be higher than the confidence level to indicate homocedasticity 
-# We have homocedasticity as the variance of the error is constant
+bptest(model_hdd) # should be higher than the confidence level to indicate homogeneity 
 # and the p-value of the Breusch-Pagan test is 0.06139
 
 # 3. The error values are independent (59)
@@ -353,9 +355,9 @@ shapiro.test(residuals(model_weight))
 # 2. The standard deviation is a constant regardless of the value of x (slide 57)
 plot(residuals(model_weight))
 abline(h = 0, col = "red")
+# We have homocedasticity 
 library(lmtest)
-bptest(model_weight) # should be higher than the confidence level to indicate homocedasticity 
-# We have homocedasticity as the variance of the error is constant
+bptest(model_weight) # should be higher than the confidence level to indicate homogeneity 
 # and the p-value of the Breusch-Pagan test is 3.525e-06
 
 # 3. The error values are independent (59)
@@ -379,18 +381,6 @@ print(summ_weight)
 # the price is explained by the HDD
 
 
-
-# Part B
-# Define variables to loop through
-# Load data
-laptop <- read.csv("data/laptop_data_cleaned.csv")
-
-# Convert columns to numeric
-laptop$Weight <- as.numeric(laptop$Weight)
-laptop$Price <- as.numeric(laptop$Price)
-laptop$Ppi <- as.numeric(laptop$Ppi)
-laptop$HDD <- as.numeric(laptop$HDD)
-laptop$SSD <- as.numeric(laptop$SSD)
 
 # ------ Outlier removal ----
 # Check and remove rows with NA values in specified columns
@@ -447,19 +437,15 @@ for (i in 1:(length(variables)-1)) {
     two_dw[[paste("dw", variables[i], variables[j], sep = "_")]] <- dwtest(two_model, alternative = "two.sided")
     
     two_rsquared[[paste(variables[i], variables[j], sep = "_")]] <- summary(two_model)$r.squared
+    
+    print(vif(two_model))
+    print(bptest(two_model))
+    print(dwtest(two_model))
+    print(shapiro.test(residuals(two_model)))
   }
 }
 
-two_best_model_index <- names(which.max(unlist(two_rsquared)))
-two_best_model <- two_models[[two_best_model_index]]
-two_best_model_summary <- summary(two_best_model)
-two_best_model_rsquared <- two_rsquared[[two_best_model_index]]
-
-print(two_best_model_summary)
-print(paste("Best model R-squared for two:", two_best_model_rsquared))
-
-# RAM_SSD is chosen as the best model
-#model_ram_ssd <- two_models[["Ram_SSD"]]
+# Best model is Ppi_HDD for multivariate models
 
 # Part C
 factors <- c("Company", "TypeName", "Cpu_brand", "Gpu_brand", "Os")
