@@ -1,3 +1,13 @@
+# #########
+# SMDE 1st Assignment
+#
+# Authors:
+#    Javier Beiro Piñón
+#    Valéria Soldera Girelli
+#    Duru Degimli
+# #########
+
+
 library(readr)
 
 setwd("/home/vsoldera/dev/upc/2nd/smde/smde_1st_assignment/")
