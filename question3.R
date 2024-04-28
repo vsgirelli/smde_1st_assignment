@@ -1,6 +1,4 @@
 library(readr)
-
-setwd("/home/vsoldera/dev/upc/2nd/smde/smde_1st_assignment/")
 laptop <- read.csv("data/laptop_data_cleaned.csv")
 #write.csv(num_laptop, file = "no_outliers_numerical_laptop.csv", row.names = TRUE)
 num_laptop <- read.csv("no_outliers_numerical_laptop.csv")
@@ -38,34 +36,32 @@ boxplot(laptop$SSD,
 columns_to_check <- c("Weight", "HDD", "Ppi", "SSD") 
 num_laptop <- laptop[, sapply(laptop, is.numeric)]
 
-
 # Initiate a counter for tracking
 iteration_counter <- 1
 repeat {
   outliers_removed <- FALSE
   
-  
-  columns_to_check <- "Weight"
   for (column in columns_to_check) {
-  # Calculate outliers in the filtered dataset
-  outliers <- boxplot.stats(num_laptop[[column]])$out
-  # Filter out the outliers from the filtered dataset
-  num_laptop <- num_laptop[!num_laptop[[column]] %in% outliers, ]
-  
-  # Print the iteration and number of outliers found (optional)
-  cat("Iteration", iteration_counter, ": Found", length(outliers), "outliers\n")
-  
-  if (length(outliers) > 0) {
-    outliers_removed <- TRUE
-  }
+    # Calculate outliers in the filtered dataset
+    outliers <- boxplot.stats(num_laptop[[column]])$out
+    # Filter out the outliers from the filtered dataset
+    num_laptop <- num_laptop[!num_laptop[[column]] %in% outliers, ]
+    
+    # Print the iteration and number of outliers found (optional)
+    cat("Iteration", iteration_counter, "Column:", column, ": Found", length(outliers), "outliers\n")
+    
+    if (length(outliers) > 0) {
+      outliers_removed <- TRUE
+    }
   }
   # Increment the counter
   iteration_counter <- iteration_counter + 1
   # Break the loop if no outliers are found
-  if(length(outliers) == 0) {
+  if(!outliers_removed) {
     break
   }
 }
+
 
 boxplot(num_laptop$Ppi,
         main = "Box Plot of Laptop Weights",
@@ -92,9 +88,7 @@ boxplot(num_laptop$Ppi,
 library(corrplot)
 summary(num_laptop)
 #num_laptop <- num_laptop[, sapply(num_laptop, is.numeric)]
-num_laptop <- subset(num_laptop, select = -X)
-num_laptop_not_ppi <- subset(num_laptop, select = -Ppi)
-correlation_matrix <- cor(num_laptop_not_ppi)
+correlation_matrix <- cor(num_laptop)
 corrplot(correlation_matrix, method = "color", tl.col = "black", tl.cex = 1, cl.cex = 0.8)
 # In this corrplot, basically it means that the darker blue colors (essentially with RAM and SSD)
 # indicate that there's a strong positive relationship
@@ -118,17 +112,6 @@ library(ggplot2)
 
 
 # Outliers: the right-most point is an outlier
-ram_price <- ggplot(num_laptop, aes_string(x = "Ram", y = "Price")) +
-    theme(text = element_text(size = 16)) +
-    scale_y_continuous(labels = scales::number_format(accuracy = 0.01),
-                       breaks = seq(min(num_laptop$Price), max(num_laptop$Price), length.out = 5)) +
-    scale_x_continuous(labels = scales::number_format(accuracy = 0.01),
-                       breaks = seq(min(num_laptop$Ram), max(num_laptop$Ram), length.out = 7)) +
-    geom_point() +
-    labs(x = "Ram", y = "Price") +
-    ggtitle(paste( "Ram vs. Price"))
-print(ram_price)
-
 weight_price <- ggplot(num_laptop, aes_string(x = "Weight", y = "Price")) +
   theme(text = element_text(size = 16)) +
   geom_point() +
@@ -171,59 +154,6 @@ qqnorm(num_laptop$Price)
 hist(num_laptop$Price)
 shapiro.test(num_laptop$Price) 
 
-################ RAM MODEL
-# (outlier removed)
-#ram_2 <- (num_laptop$Ram)^2
-
-
-model_ram <- lm(Price ~ Ram, data = num_laptop)
-# first I'll test if the method is valid by testing if the residuals:
-# 1. Its probability distribution is normal. (the mean of the dist is 0) (slide 53)
-qqnorm(residuals(model_ram))
-hist(residuals(model_ram))
-shapiro.test(residuals(model_ram)) # should be higher than confidence level
-# p-value = 0.304, normal
-
-# 2. The standard deviation is a constant regardless of the value of x (slide 57)
-plot(residuals(model_ram))
-abline(h = 0, col = "red")
-# We had an outlier:
-# the plot shows that there's an outlier in RAM
-# an outlier in a residual plot used to test for homoscedasticity
-# may indicate potential issues with the assumption of constant variance of the residuals
-# We have homocedasticity .
-library(lmtest)
-bptest(model_ram) # should be higher than the confidence level to indicate homogeneity 
-# and the p-value of the Breusch-Pagan test is 0.804
-
-# 3. The error values are independent (59)
-dwtest(model_ram, alternative = "two.sided") # should be higher than the confidence level 
-# the Durbin-Watson p-value is 0.03212 indicates that there is
-# autocorrelation in the residuals as it is smaller than the significance level.
-# Tried modifications, didn't work
-
-# We need to make an analysis of the residuals: examine the differences
-# between the actual data points and those predicted by the linear equation
-summ_ram <- summary(model_ram)
-print(summ_ram)
-# Residual standard error: 0.4143 on 987 degrees of freedom
-# the Price's mean is 10.82, so since the error is small in comparison
-# to the price's mean, it means that the model is good.
-# For analyzing the slope, we get that the p-value is almost 0 (<2.2e-16)
-# so it indicates that we can reject the null hypothesis that the slope 
-# is zero and conclude that there is evidence of a linear relationship 
-# between the two variables.
-
-# Coefficient of Determination: the strength of the relationship
-# Multiple R-squared:  0.4233 indicates that 48% of the variation of
-# the price is explained by the RAM.
-
-# TODO 
-# check the intervals (41) she also does it
-# use the equation to predict a particular value
-
-
-
 ################ SSD MODEL
 model_ssd <- lm(Price ~ SSD, data = num_laptop)
 # first I'll test if the method is valid by testing if the residuals:
@@ -237,10 +167,10 @@ shapiro.test(residuals(model_ssd))
 # 2. The standard deviation is a constant regardless of the value of x (slide 57)
 plot(residuals(model_ssd))
 abline(h = 0, col = "red")
-# We have homocedasticity 
 library(lmtest)
-bptest(model_ssd) # should be higher than the confidence level to indicate homogeneity 
-# p-value Breusch-Pagan test is 0.8345
+bptest(model_ssd) # should be higher than the confidence level to indicate homocedasticity 
+# We have homocedasticity as the variance of the error is constant
+# and the p-value of the Breusch-Pagan test is 0.8345
 
 # 3. The error values are independent (59)
 dwtest(model_ssd, alternative = "two.sided") # should be higher than the confidence level 
@@ -278,9 +208,9 @@ shapiro.test(residuals(model_ppi))
 # 2. The standard deviation is a constant regardless of the value of x (slide 57)
 plot(residuals(model_ppi))
 abline(h = 0, col = "red")
-# We have homocedasticity 
 library(lmtest)
-bptest(model_ppi) # should be higher than the confidence level to indicate homogeneity 
+bptest(model_ppi) # should be higher than the confidence level to indicate homocedasticity 
+# We have homocedasticity as the variance of the error is constant
 # and the p-value of the Breusch-Pagan test is p-value < 2.2e-16 (bad)
 
 # 3. The error values are independent (59)
@@ -314,9 +244,9 @@ shapiro.test(residuals(model_hdd))
 # 2. The standard deviation is a constant regardless of the value of x (slide 57)
 plot(residuals(model_hdd))
 abline(h = 0, col = "red")
-# We have homocedasticity 
 library(lmtest)
-bptest(model_hdd) # should be higher than the confidence level to indicate homogeneity 
+bptest(model_hdd) # should be higher than the confidence level to indicate homocedasticity 
+# We have homocedasticity as the variance of the error is constant
 # and the p-value of the Breusch-Pagan test is 0.06139
 
 # 3. The error values are independent (59)
@@ -355,9 +285,9 @@ shapiro.test(residuals(model_weight))
 # 2. The standard deviation is a constant regardless of the value of x (slide 57)
 plot(residuals(model_weight))
 abline(h = 0, col = "red")
-# We have homocedasticity 
 library(lmtest)
-bptest(model_weight) # should be higher than the confidence level to indicate homogeneity 
+bptest(model_weight) # should be higher than the confidence level to indicate homocedasticity 
+# We have homocedasticity as the variance of the error is constant
 # and the p-value of the Breusch-Pagan test is 3.525e-06
 
 # 3. The error values are independent (59)
@@ -381,7 +311,7 @@ print(summ_weight)
 # the price is explained by the HDD
 
 
-
+# Part
 # ------ Outlier removal ----
 # Check and remove rows with NA values in specified columns
 laptop <- na.omit(laptop)
@@ -399,6 +329,13 @@ threshold <- qchisq(0.999, df = 5)  # df is the number of variables
 # Identify outliers
 outliers <- which(laptop$Mahalanobis > threshold)
 multi_laptop <- laptop[-outliers, ]
+
+# For multivariate model, since we have to try every combination of the 
+# available pairs of these four variables, we are utilizing a loop and 
+# several lists to hold the information.
+#
+# In addition to shapiro, bp and dw tests,
+# we are also checking the variance inflation factor for multicollinearity.
 
 variables <- c("Weight", "Ppi", "HDD", "SSD")
 
@@ -453,17 +390,15 @@ factors <- c("Company", "TypeName", "Cpu_brand", "Gpu_brand", "Os", "Ram")
 factored_models <- list()
 
 for (var in factors) {
-  formula <- paste("Price ~ Ppi + SSD +", var)
+  formula <- paste("Price ~ SSD +", var)
   model <- lm(formula, data = multi_laptop)
   factored_models[[var]] <- model
 }
 
 for (var in factors) {
-  cat("Summary for model with", var, "as a factor:\n")
+  print(paste("Summary for model with", var, "as a factor:"))
   print(summary(factored_models[[var]]))
-  cat("\n")
 }
-
 
 
 # Validity
@@ -491,6 +426,3 @@ RMSE1
 names(train.model1)
 RMSE_train1<- sqrt(mean((train.model1$residuals)^2)/nrow(train.set1))
 RMSE_train1
-
-
-
