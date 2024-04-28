@@ -384,7 +384,7 @@ print(summ_weight)
 
 # ------ Outlier removal ----
 # Check and remove rows with NA values in specified columns
-laptop <- na.omit(laptop[, c("Weight", "Price", "Ppi", "HDD", "SSD")])
+laptop <- na.omit(laptop)
 
 # Calculate Mahalanobis distance
 # install.packages("mvoutlier")
@@ -398,11 +398,9 @@ threshold <- qchisq(0.999, df = 5)  # df is the number of variables
 
 # Identify outliers
 outliers <- which(laptop$Mahalanobis > threshold)
-num_laptop <- laptop[-outliers, ]
+multi_laptop <- laptop[-outliers, ]
 
 variables <- c("Weight", "Ppi", "HDD", "SSD")
-
-# Outlier removal
 
 two_model <- list()
 two_summary <- list()
@@ -413,10 +411,11 @@ two_dw <- list()
 two_models <- list()
 two_rsquared <- list()
 
+
 for (i in 1:(length(variables)-1)) {
   for (j in (i+1):length(variables)) {
     # Build model
-    two_model <- lm(Price ~ ., data = num_laptop[, c("Price", variables[i], variables[j])])
+    two_model <- lm(Price ~ ., data = multi_laptop[, c("Price", variables[i], variables[j])])
     two_models[[paste(variables[i], variables[j], sep = "_")]] <- two_model
     
     two_summary[[paste("summ", variables[i], variables[j], sep = "_")]] <- summary(two_model)
@@ -446,10 +445,52 @@ for (i in 1:(length(variables)-1)) {
 }
 
 # Best model is Ppi_HDD for multivariate models
+print(two_summary["summ_Ppi_HDD"])
 
 # Part C
-factors <- c("Company", "TypeName", "Cpu_brand", "Gpu_brand", "Os")
+factors <- c("Company", "TypeName", "Cpu_brand", "Gpu_brand", "Os", "Ram")
 
 factored_models <- list()
+
+for (var in factors) {
+  formula <- paste("Price ~ Ppi + SSD +", var)
+  model <- lm(formula, data = multi_laptop)
+  factored_models[[var]] <- model
+}
+
+for (var in factors) {
+  cat("Summary for model with", var, "as a factor:\n")
+  print(summary(factored_models[[var]]))
+  cat("\n")
+}
+
+
+
+# Validity
+n <- nrow(multi_laptop)
+train.sample1 <- sample(1:n, round(0.67*n))
+train.set1 <- multi_laptop[train.sample1, ]
+test.set1 <- multi_laptop[-train.sample1, ]
+
+train.model1 <- lm(Price ~ SSD + Cpu_brand, data = train.set1)
+summary(train.model1)
+
+yhat <- predict(train.model1, test.set1, interval = "prediction")
+yhat
+
+y <- test.set1$Price
+
+error<-cbind(yhat[,1,drop=FALSE],y,(y-yhat[,1])^2)
+sqr_err<-error[,3]
+mse<-mean(sqr_err)
+
+### Root Mean Square Error ###
+RMSE1<-sqrt(mse/(nrow(test.set1)))
+RMSE1
+
+names(train.model1)
+RMSE_train1<- sqrt(mean((train.model1$residuals)^2)/nrow(train.set1))
+RMSE_train1
+
 
 
